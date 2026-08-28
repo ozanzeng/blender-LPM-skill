@@ -49,12 +49,13 @@ The skill builds the model from primitives with a recipe script, renders it, che
 
 ---
 
-## The two prompts we ran (verbatim)
+## The prompts we ran (verbatim)
 
 | # | Prompt (as given, Turkish) | Meaning | Result |
 | --- | --- | --- | --- |
 | 1 | *"tamam güzel sandığı boya ve render al bakalım nasıl görünüyor"* (after *"bana low poly sandık çiz"*) | "Draw me a low-poly chest" → "nice, now paint it and render it, let's see" | `SM_Chest` — 576 tris / budget 800, barrel lid with alternating planks, iron straps + rivets, lock, brackets, handles; Cycles render below |
 | 2 | *"low-poly bir Roma ganimet sandığı oluştur. Mobil Unity/URP hedefli olsun; kapalı halde 1.2 m genişlik, en fazla 2.500 üçgen, ahşap gövde ve bronz şeritler, ayrı basit çarpışma gövdesi, uygulanmış transformlar, UV'ler ve materyaller içersin. Düzenlenebilir .blend ile .fbx teslim et; ayrıca turntable/inceleme renderı üret."* | "Create a low-poly Roman loot chest for mobile Unity/URP: closed, 1.2 m wide, max 2 500 tris, wood body + bronze straps, separate simple collision body, applied transforms, UVs and materials. Deliver editable .blend + .fbx and a turntable/inspection render." | `SM_RomanChest` — 868 tris + 12-tri `_COL` collider, 1.20 × 0.69 × 0.80 m, gates PASS, `.blend` + `.fbx` + palette textures, 48-frame turntable MP4, Cycles renders, one-file asset card |
+| 3 | *"benim için blenderda skill kullanarak low poly villa bir ev tasarla"* | "Design a low-poly villa house for me in Blender using the skill" | `SM_RomanVilla` — 1 580 tris / budget 3 000, 23 × 17 × 8 m: hipped terracotta roofs, 4-column portico, arched door, tower, wing, shuttered windows, plinth with steps and gate piers, two cypresses; collider, turntable, Cycles renders, asset card |
 
 <table>
 <tr>
@@ -65,9 +66,13 @@ The skill builds the model from primitives with a recipe script, renders it, che
 <td align="center"><img src="docs/images/roman_chest_views.png" width="440"><br><sub>Prompt 2 — automatic 5-view inspection sheet</sub></td>
 <td align="center"><img src="docs/images/roman_chest_turntable.jpg" width="440"><br><sub>Prompt 2 — 8 frames of the 48-frame turntable</sub></td>
 </tr>
+<tr>
+<td align="center"><img src="docs/images/roman_villa.png" width="440"><br><sub>Prompt 3 — <code>SM_RomanVilla</code>, Cycles</sub></td>
+<td align="center"><img src="docs/images/roman_villa_views.png" width="440"><br><sub>Prompt 3 — 5-view inspection sheet</sub></td>
+</tr>
 </table>
 
-Both were produced end-to-end by the skill's loop: **brief → part list → recipe script → build → render → look → fix → gates → export → asset card**. Prompt 2 needed two iterations (the collision box leaked into the first render; lid straps poked above the ridge) — both fixes went back into the skill.
+All three were produced end-to-end by the skill's loop: **brief → part list → recipe script → build → render → look → fix → gates → export → asset card**. Prompt 2 needed two iterations (the collision box leaked into the first render; lid straps poked above the ridge); prompt 3 needed two (plinth too small, garden wall inside the tower) — every fix went back into the skill or the recipe.
 
 ---
 
@@ -143,7 +148,7 @@ skills/blender-lpm-skill/
     turntable.py           360° MP4 + sheet      inspect_scene.py   measurements
     gate_report.py         PASS/FAIL gates       compare_silhouette.py  reference overlay
     asset_card.py          one-file delivery card
-  examples/                gladius, scutum, galea_helmet, arena_column, chest, roman_chest
+  examples/                gladius, scutum, galea_helmet, arena_column, chest, roman_chest, roman_villa
 docs/images/               renders used in this README
 ```
 
