@@ -31,11 +31,15 @@ every triangle earns its place, numbers before opinions.
 | Asset (recipe in `examples/`) | Triangles | Budget | Size (m) | Gates |
 | --- | ---: | ---: | --- | --- |
 | Roman gladius | 268 | 1 200 | 0.075 × 0.06 × 0.65 | PASS |
-| Curved scutum with boss, rim, spine, bands | ~300 | 1 500 | 0.59 × 0.20 × 1.05 | PASS |
+| Curved scutum with boss, rim, spine, bands | 436 | 1 500 | 0.47 × 0.17 × 1.05 | PASS · silhouette IoU vs concept **0.95**, aspect diff 0.9 % |
 | Imperial Gallic galea helmet with crest and cheek plates | 234 | 1 500 | 0.30 × 0.25 × 0.39 | PASS |
 | Arena column module (plinth, shaft, capital) | 224 | 600 | 0.72 × 0.72 × 2.88 | PASS |
 
 Each one is a ~30-line recipe and builds in seconds; the whole set shares one 16-colour palette (`PALETTE_ROMAN`).
+
+The loop in practice: the first scutum overlaid its concept at IoU 0.78 with a 23 % aspect error; changing two
+numbers in the recipe (width 0.65 → 0.52 m, bend radius 0.45 → 0.40 m) and re-running took it to IoU 0.95 / 0.9 %.
+That is the whole point — the recipe is the asset, so fixing it is editing numbers, not re-sculpting.
 
 ## Install
 
