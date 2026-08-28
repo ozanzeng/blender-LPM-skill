@@ -39,6 +39,8 @@ def parse():
     p.add_argument("--no-sheet", action="store_true")
     p.add_argument("--yaw", type=float, default=0.0, help="extra rotation (deg) about Z applied to every camera")
     p.add_argument("--margin", type=float, default=1.15)
+    p.add_argument("--quarter-elev", type=float, default=None, help="override the three-quarter view elevation (deg) to match a reference camera")
+    p.add_argument("--quarter-az", type=float, default=None, help="override the three-quarter view azimuth (deg)")
     return p.parse_args(argv)
 
 
@@ -194,6 +196,9 @@ def main():
     written = []
     for view in [v.strip() for v in a.views.split(",") if v.strip()]:
         az, el = VIEW_ANGLES[view]
+        if view == "quarter":
+            az = a.quarter_az if a.quarter_az is not None else az
+            el = a.quarter_elev if a.quarter_elev is not None else el
         cam = make_camera(scene, f"RV_{view}", center, radius, az + a.yaw, el, a.ortho, a.margin)
         scene.camera = cam
         path = os.path.join(out, f"{view}.png")

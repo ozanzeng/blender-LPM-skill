@@ -38,6 +38,14 @@ that turns a brief into a finished, exported, measured asset in one headless run
    (self-contained HTML with embedded images, Markdown twin next to it).
    Report triangles vs budget, dimensions, and any deliberate deviation from the reference.
 
+## From a reference image (concept art → model)
+
+Follow [references/reference-to-lowpoly.md](references/reference-to-lowpoly.md): **audit table first** (parts →
+primitives/kit builders, proportions as ratios, camera angle, palette, organic parts), then recipe, then a quarter
+render at the reference's camera + `compare_silhouette.py`, max 3 iterations, accept by IoU/aspect + the 5-view sheet.
+Kit builders for Roman/stylized sets live in `scripts/lpm_kit.py` (banner, medallion, rivets, meander band, block
+course, flame, handle arc, column, plinth steps, wall ring, ring_of). Organic parts go to the fal.ai lane.
+
 ## Style rules
 
 - **Flat shading everywhere**; curvature comes from facet count: 6–8 sides for grips and rivets, 8–12 for domes
@@ -71,7 +79,7 @@ that turns a brief into a finished, exported, measured asset in one headless run
 | `collision_box(ob)` | 12-tri collision proxy `<name>_COL` (parented, wire, hidden in renders, exported with `extra=[…]`) |
 | `export_unity(ob, stem, extra=[collider])` | `.blend` + Unity FBX (asset + helpers) + palette PNGs; prints `##JSON##` report |
 
-Companion scripts: `bl.py` (run Blender headless), `render_views.py` (5 views + sheet), `beauty_render.py`
+Kit: `scripts/lpm_kit.py` (Roman set builders). Companion scripts: `bl.py` (run Blender headless), `render_views.py` (5 views + sheet), `beauty_render.py`
 (presentation render), `turntable.py` (360° MP4 + 8-frame sheet), `inspect_scene.py`, `gate_report.py`
 (ignores `_COL`/LOD helpers), `compare_silhouette.py`, `asset_card.py` (prompt + recipe + metrics + renders → one HTML/MD file). Worked recipes in `examples/`: gladius, scutum, galea helmet, arena column, chest, roman_chest (with collider + turntable).
 
