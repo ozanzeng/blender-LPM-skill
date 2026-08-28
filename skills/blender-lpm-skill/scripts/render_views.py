@@ -62,7 +62,7 @@ def scene_bounds(depsgraph):
     lo = Vector((math.inf,) * 3)
     hi = Vector((-math.inf,) * 3)
     for o in bpy.data.objects:
-        if o.type != "MESH" or o.hide_render:
+        if o.type != "MESH" or o.hide_render or o.get("lpm_collision") or o.name.endswith("_COL"):
             continue
         ev = o.evaluated_get(depsgraph)
         me = ev.to_mesh()
@@ -176,6 +176,9 @@ def main():
     out = os.path.abspath(a.out)
     os.makedirs(out, exist_ok=True)
     scene = bpy.context.scene
+    for o in bpy.data.objects:
+        if o.get("lpm_collision") or o.name.endswith("_COL"):
+            o.hide_render = True
     depsgraph = bpy.context.evaluated_depsgraph_get()
     lo, hi = scene_bounds(depsgraph)
     center = (lo + hi) / 2

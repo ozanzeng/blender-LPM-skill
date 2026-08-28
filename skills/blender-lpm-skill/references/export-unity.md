@@ -8,5 +8,7 @@
   **sRGB off**); Normal map not used (flat-shaded).
 - Texture import for palettes: Filter Mode = Point, Compression = None or high quality, mip maps off (tiny textures).
 - Pivot: base centre (props) or snapping corner (kit modules); check `inspect_scene.py` bounds min z = 0.
-- Collision: box/capsule primitives in Unity, or a `collision-proxy` mesh if the shape needs it.
+- Collision: `lpm.collision_box(asset)` adds `<Name>_COL` (12 tris, parented, hidden in renders) and `export_unity(..., extra=[col])`
+  puts it in the same FBX. In Unity: add a **MeshCollider (Convex)** or a BoxCollider to `<Name>_COL`, disable its MeshRenderer,
+  or let an import script do it by the `_COL` suffix. Use capsules/boxes in Unity directly when the shape is trivial.
 - GLB: `lpm.export_unity(ob, stem, glb=True)` also writes `<stem>.glb` for Godot / web viewers.

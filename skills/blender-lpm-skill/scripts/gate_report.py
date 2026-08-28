@@ -31,7 +31,10 @@ def main() -> int:
     p.add_argument("--ground-tolerance", type=float, default=0.02)
     p.add_argument("--allow-floating", action="store_true")
     p.add_argument("--out", default="")
+    p.add_argument("--ignore", default=r"(_COL$|^UCX_|^UBX_|^UCP_|_LOD[1-9]$)", help="regex of object names excluded from per-mesh gates (collision proxies, LODs)")
     a = p.parse_args()
+    import re
+    ignore = re.compile(a.ignore) if a.ignore else None
     d = json.load(open(a.inspect_json, encoding="utf-8"))
     rules = dict(CLASSES[a.cls])
     if a.budget: rules["budget"] = a.budget
@@ -54,8 +57,12 @@ def main() -> int:
     if not a.allow_floating:
         gate("lowest point z", round(zmin, 4), f"|z| <= {a.ground_tolerance}", abs(zmin) <= a.ground_tolerance, fix="move to ground and apply transforms")
     meshes = d.get("meshes", [])
+    ignored = [m["name"] for m in meshes if ignore and ignore.search(m["name"])]
     for m in meshes:
         n = m["name"]
+        if n in ignored:
+            gate(f"{n}: helper mesh (collision/LOD)", f"{m['tris']} tris", "excluded from mesh gates", True, hard=False)
+            continue
         gate(f"{n}: transforms applied", m["transforms_applied"], "True", m["transforms_applied"], fix="transform_apply(location, rotation, scale)")
         gate(f"{n}: negative scale", m["negative_scale"], "False", not m["negative_scale"], fix="apply scale + recalc normals")
         gate(f"{n}: UV layers", len(m["uv_layers"]), ">= 1", len(m["uv_layers"]) >= 1, fix="seams + unwrap")

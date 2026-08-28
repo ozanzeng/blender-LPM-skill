@@ -67,12 +67,13 @@ that turns a brief into a finished, exported, measured asset in one headless run
 | `sweep(name, [(x, z), …], depth, at, color, axis)` | extruded outline (blade, plate, crest, cheek) |
 | `plate(name, w, h, t, corner, at, color)` | rounded rectangular plate (shield body) |
 | `bend(ob, radius, axis)` · `taper(ob, f, z0, z1)` · `mirror_x(ob)` · `rotate` · `move` · `scale` | deformers |
-| `finish(name, parts, palette, budget)` | join, weld, ground, centre, palette UVs, single material, budget check |
-| `export_unity(ob, stem)` | `.blend` + Unity FBX + palette PNGs; prints `##JSON##` report |
+| `finish(name, parts, palette, budget)` | join, weld (per part), ground, centre, palette UVs, single material, budget check |
+| `collision_box(ob)` | 12-tri collision proxy `<name>_COL` (parented, wire, hidden in renders, exported with `extra=[…]`) |
+| `export_unity(ob, stem, extra=[collider])` | `.blend` + Unity FBX (asset + helpers) + palette PNGs; prints `##JSON##` report |
 
 Companion scripts: `bl.py` (run Blender headless), `render_views.py` (5 views + sheet), `beauty_render.py`
-(presentation render), `inspect_scene.py`, `gate_report.py`, `compare_silhouette.py`, `asset_card.py`
-(prompt + recipe + metrics + renders → one HTML/MD file). Worked recipes in `examples/`: gladius, scutum, galea helmet, arena column.
+(presentation render), `turntable.py` (360° MP4 + 8-frame sheet), `inspect_scene.py`, `gate_report.py`
+(ignores `_COL`/LOD helpers), `compare_silhouette.py`, `asset_card.py` (prompt + recipe + metrics + renders → one HTML/MD file). Worked recipes in `examples/`: gladius, scutum, galea helmet, arena column, chest, roman_chest (with collider + turntable).
 
 ## With Blender MCP instead of headless
 

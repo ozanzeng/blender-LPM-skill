@@ -25,7 +25,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 __all__ = ["reset", "Palette", "box", "grid_box", "prism", "lathe", "sweep", "plate", "bend", "mirror_x", "move", "rotate",
-           "scale", "taper", "paint", "finish", "tri_count", "report", "export_unity", "save", "PALETTE_ROMAN"]
+           "scale", "taper", "paint", "finish", "collision_box", "tri_count", "report", "export_unity", "save", "PALETTE_ROMAN"]
 
 # A ready-made Roman / gladiator palette: (name, hex, metallic, roughness)
 PALETTE_ROMAN = [
@@ -383,6 +383,26 @@ def finish(name, parts, palette, budget=None, ground=True, center=True, merge_di
     return ob
 
 
+def collision_box(ob, name=None, margin=0.0, collection="COL_Collision"):
+    """Simple 12-triangle collision proxy around `ob` (Unity: add a MeshCollider (convex) or BoxCollider to it).
+    Parented to the asset, no material, wire display, in its own collection. Name defaults to <asset>_COL."""
+    name = name or f"{ob.name}_COL"
+    lo = Vector((min(v.co.x for v in ob.data.vertices) - margin, min(v.co.y for v in ob.data.vertices) - margin, min(v.co.z for v in ob.data.vertices) - margin))
+    hi = Vector((max(v.co.x for v in ob.data.vertices) + margin, max(v.co.y for v in ob.data.vertices) + margin, max(v.co.z for v in ob.data.vertices) + margin))
+    verts = [(lo.x, lo.y, lo.z), (hi.x, lo.y, lo.z), (hi.x, hi.y, lo.z), (lo.x, hi.y, lo.z),
+             (lo.x, lo.y, hi.z), (hi.x, lo.y, hi.z), (hi.x, hi.y, hi.z), (lo.x, hi.y, hi.z)]
+    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+    me = bpy.data.meshes.new(name)
+    bm = _bm_from(verts, faces); bm.to_mesh(me); bm.free()
+    col = bpy.data.objects.new(name, me)
+    _col(collection).objects.link(col)
+    col.display_type = "WIRE"
+    col.hide_render = True                      # never in renders; still exported to FBX
+    col.parent = ob
+    col["lpm_collision"] = True
+    return col
+
+
 def report(ob):
     d = ob.dimensions
     return {"name": ob.name, "tris": tri_count(ob), "verts": len(ob.data.vertices), "dims_m": [round(d.x, 4), round(d.y, 4), round(d.z, 4)],
@@ -396,8 +416,9 @@ def save(path):
     return os.path.abspath(path)
 
 
-def export_unity(ob, out_stem, glb=False):
-    """Writes <stem>.blend, <stem>.fbx (Unity axes: -Z forward, Y up) and tex/<name>_BaseColor.png + _MaskMap.png."""
+def export_unity(ob, out_stem, glb=False, extra=()):
+    """Writes <stem>.blend, <stem>.fbx (Unity axes: -Z forward, Y up) and tex/<name>_BaseColor.png + _MaskMap.png.
+    `extra` = additional objects to include in the FBX (collision proxies, LODs)."""
     out_stem = os.path.abspath(out_stem)
     out_dir = os.path.dirname(out_stem)
     tex_dir = os.path.join(out_dir, "tex")
@@ -412,12 +433,15 @@ def export_unity(ob, out_stem, glb=False):
         written[suffix] = img.filepath_raw
     bpy.ops.object.select_all(action="DESELECT")
     ob.select_set(True); bpy.context.view_layer.objects.active = ob
+    for e in extra:
+        e.select_set(True)
     bpy.ops.export_scene.fbx(filepath=out_stem + ".fbx", use_selection=True, apply_scale_options="FBX_SCALE_NONE",
                              axis_forward="-Z", axis_up="Y", use_mesh_modifiers=True, use_tspace=True, mesh_smooth_type="FACE",
                              object_types={"MESH"}, bake_anim=False, path_mode="COPY", embed_textures=False)
     if glb:
         bpy.ops.export_scene.gltf(filepath=out_stem + ".glb", use_selection=True, export_format="GLB")
     blend = save(out_stem + ".blend")
-    rep = report(ob); rep.update({"blend": blend, "fbx": out_stem + ".fbx", "textures": written})
+    rep = report(ob); rep.update({"blend": blend, "fbx": out_stem + ".fbx", "textures": written,
+                                  "extra_objects": [{"name": e.name, "tris": tri_count(e)} for e in extra]})
     print("##JSON##" + json.dumps(rep))
     return rep

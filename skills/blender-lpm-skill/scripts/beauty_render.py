@@ -33,7 +33,7 @@ def bounds():
     dg = bpy.context.evaluated_depsgraph_get()
     lo, hi = Vector((math.inf,) * 3), Vector((-math.inf,) * 3)
     for o in bpy.data.objects:
-        if o.type != "MESH":
+        if o.type != "MESH" or o.hide_render or o.get("lpm_collision") or o.name.endswith("_COL"):
             continue
         me = o.evaluated_get(dg).to_mesh()
         for v in me.vertices:
@@ -52,6 +52,9 @@ def main():
     a = parse()
     bpy.ops.wm.open_mainfile(filepath=os.path.abspath(a.input))
     scene = bpy.context.scene
+    for o in bpy.data.objects:
+        if o.get("lpm_collision") or o.name.endswith("_COL"):
+            o.hide_render = True
     lo, hi = bounds()
     center = (lo + hi) / 2
     radius = max((hi - lo).length / 2, 1e-3)
@@ -63,7 +66,7 @@ def main():
     scene.world = world
     # ground
     if a.ground:
-        bpy.ops.mesh.primitive_plane_add(size=radius * 40, location=(center.x, center.y, lo.z))
+        bpy.ops.mesh.primitive_plane_add(size=radius * 400, location=(center.x, center.y, lo.z))
         ground = bpy.context.active_object; ground.name = "BR_Ground"
         m = bpy.data.materials.new("BR_Ground"); m.use_nodes = True
         b = m.node_tree.nodes["Principled BSDF"]
