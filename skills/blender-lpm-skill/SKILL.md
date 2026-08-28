@@ -33,6 +33,9 @@ that turns a brief into a finished, exported, measured asset in one headless run
    no loose vertices.
 7. **Deliver**: `<Name>.blend`, `<Name>.fbx` (Unity axes −Z forward / Y up), `tex/<Name>_BaseColor.png`,
    `tex/<Name>_MaskMap.png` (R metallic · G AO · A smoothness), plus the contact sheet and the gate report.
+   Bundle prompt + recipe + metrics + renders into one shareable file with
+   `python scripts/asset_card.py --name <Name> --prompt "<brief>" --recipe <recipe.py> --render <png> … --out <Name>_card.html`
+   (self-contained HTML with embedded images, Markdown twin next to it).
    Report triangles vs budget, dimensions, and any deliberate deviation from the reference.
 
 ## Style rules
@@ -67,8 +70,9 @@ that turns a brief into a finished, exported, measured asset in one headless run
 | `finish(name, parts, palette, budget)` | join, weld, ground, centre, palette UVs, single material, budget check |
 | `export_unity(ob, stem)` | `.blend` + Unity FBX + palette PNGs; prints `##JSON##` report |
 
-Companion scripts: `bl.py` (run Blender headless), `render_views.py` (5 views + sheet), `inspect_scene.py`,
-`gate_report.py`, `compare_silhouette.py`. Worked recipes in `examples/`: gladius, scutum, galea helmet, arena column.
+Companion scripts: `bl.py` (run Blender headless), `render_views.py` (5 views + sheet), `beauty_render.py`
+(presentation render), `inspect_scene.py`, `gate_report.py`, `compare_silhouette.py`, `asset_card.py`
+(prompt + recipe + metrics + renders → one HTML/MD file). Worked recipes in `examples/`: gladius, scutum, galea helmet, arena column.
 
 ## With Blender MCP instead of headless
 
