@@ -34,6 +34,7 @@ every triangle earns its place, numbers before opinions.
 | Curved scutum with boss, rim, spine, bands | 436 | 1 500 | 0.47 × 0.17 × 1.05 | PASS · silhouette IoU vs concept **0.95**, aspect diff 0.9 % |
 | Imperial Gallic galea helmet with crest and cheek plates | 234 | 1 500 | 0.30 × 0.25 × 0.39 | PASS |
 | Arena column module (plinth, shaft, capital) | 224 | 600 | 0.72 × 0.72 × 2.88 | PASS |
+| Treasure chest (barrel lid planks, straps, rivets, lock, brackets, handles) | 576 | 800 | 0.82 × 0.53 × 0.59 | PASS · Cycles beauty render clean |
 
 Each one is a ~30-line recipe and builds in seconds; the whole set shares one 16-colour palette (`PALETTE_ROMAN`).
 
@@ -76,7 +77,8 @@ axe  = lpm.finish("SM_Axe", [head, haft], P, budget=900)
 lpm.export_unity(axe, "_work/axe/SM_Axe")
 ```
 
-`Palette` cells carry colour, metallic and roughness; `finish()` joins the parts, welds, grounds and centres the
+`Palette` cells carry colour, metallic and roughness; `lpm.paint(part, colour, where=...)` recolours faces by
+position, normal or index (alternating planks, darker undersides); `finish()` joins the parts, welds, grounds and centres the
 mesh, writes per-face palette UVs, assigns the single material and checks the budget; `export_unity()` writes
 the deliverables and a JSON report.
 
@@ -94,10 +96,11 @@ skills/blender-lpm-skill/
     lpm.py                      the toolkit (builders, deformers, palette material, finish, export)
     bl.py                       run Blender headless from the agent
     render_views.py             5-view render + contact sheet (screenshot substitute)
+    beauty_render.py            presentation render: studio ground, 3-sun rig, AgX, EEVEE or Cycles
     inspect_scene.py            deterministic metrics for .blend/.glb/.fbx/.obj
     gate_report.py              PASS/FAIL gates from the metrics
     compare_silhouette.py       silhouette overlay vs reference image (IoU, aspect, bands)
-  examples/                     gladius, scutum, galea helmet, arena column
+  examples/                     gladius, scutum, galea helmet, arena column, chest
 ```
 
 ## How it compares

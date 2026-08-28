@@ -49,6 +49,8 @@ that turns a brief into a finished, exported, measured asset in one headless run
 - **Read-ability at 3 m**: contrast between neighbouring parts (wood next to steel next to bronze); avoid two
   similar mid-greys touching.
 - **Symmetry by mirror**, never by remodeling; asymmetric details only when the reference has them.
+- **No coplanar faces between parts**: sink a part ≥ 2 mm into its neighbour or let it stand ≥ 2 mm proud. Coplanar
+  twins z-fight and render black in Cycles. `finish()` welds only inside each part for the same reason.
 - **Kit modules** sit on a metric grid (0.5 / 1 m), share the palette, and have flat contact faces.
 
 ## Toolkit summary (`scripts/lpm.py`)

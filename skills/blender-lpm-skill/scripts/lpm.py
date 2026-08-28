@@ -25,7 +25,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 __all__ = ["reset", "Palette", "box", "grid_box", "prism", "lathe", "sweep", "plate", "bend", "mirror_x", "move", "rotate",
-           "scale", "taper", "finish", "tri_count", "report", "export_unity", "save", "PALETTE_ROMAN"]
+           "scale", "taper", "paint", "finish", "tri_count", "report", "export_unity", "save", "PALETTE_ROMAN"]
 
 # A ready-made Roman / gladiator palette: (name, hex, metallic, roughness)
 PALETTE_ROMAN = [
@@ -313,6 +313,20 @@ def taper(ob, factor_top, z0, z1, axes="xy"):
     ob.data.update(); return ob
 
 
+def paint(ob, color, where=None):
+    """Recolour faces of a part before finish(). `where(center, normal, index)` -> bool selects faces (all when None).
+    Examples: alternate planks  where=lambda c, n, i: i % 2 == 0 ; front faces  where=lambda c, n, i: n.y < -0.5 ;
+    the top  where=lambda c, n, i: n.z > 0.5 ; below a height  where=lambda c, n, i: c.z < 0.2"""
+    me = ob.data
+    attr = me.attributes.get("lpm_color") or me.attributes.new("lpm_color", "INT", "FACE")
+    n = 0
+    for poly in me.polygons:
+        if where is None or where(poly.center.copy(), poly.normal.copy(), poly.index):
+            attr.data[poly.index].value = int(color)
+            n += 1
+    return n
+
+
 # --------------------------------------------------------------------------- finishing
 
 def tri_count(ob):
@@ -321,8 +335,16 @@ def tri_count(ob):
 
 
 def finish(name, parts, palette, budget=None, ground=True, center=True, merge_distance=0.0005):
-    """Join parts into one flat-shaded object, weld coincident vertices per part, apply transforms, ground it,
+    """Join parts into one flat-shaded object (welding only inside each part), apply transforms, ground it,
     write palette UVs from the `lpm_color` face attribute, assign ONE palette material, check the budget."""
+    # Weld PER PART, never across parts: parts that touch at exact coordinates (a lid cap on a body edge) must
+    # stay separate shells, otherwise the merged faces flip normals and render black.
+    for p in parts:
+        bm = bmesh.new(); bm.from_mesh(p.data)
+        if merge_distance:
+            bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=merge_distance)
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        bm.to_mesh(p.data); bm.free()
     bpy.ops.object.select_all(action="DESELECT")
     for p in parts:
         p.select_set(True)
@@ -331,11 +353,6 @@ def finish(name, parts, palette, budget=None, ground=True, center=True, merge_di
         bpy.ops.object.join()
     ob = bpy.context.active_object
     ob.name = name; ob.data.name = name
-    bm = bmesh.new(); bm.from_mesh(ob.data)
-    if merge_distance:
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=merge_distance)
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    bm.to_mesh(ob.data); bm.free()
     me = ob.data
     lo = min((v.co.z for v in me.vertices), default=0)
     if ground and abs(lo) > 1e-6:

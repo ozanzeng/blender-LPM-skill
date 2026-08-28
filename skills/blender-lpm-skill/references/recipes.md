@@ -17,6 +17,7 @@ Rules of thumb
 - `sweep` outlines are (x, z) for front-facing shapes extruded along Y (`axis="y"`), or (x, y) for slabs extruded up (`axis="z"`). Outlines must be simple (non-self-intersecting) polygons listed in order.
 - `lathe` profiles go bottom → top as (radius, z); start/end with radius 0 for closed poles.
 - Deformers (`bend`, `taper`, `scale`, `rotate`, `move`) edit mesh data in place — apply them before `finish`.
-- Colour is per part; if one part needs two colours, split it into two parts.
+- Colour is per part; if one part needs two colours, split it into two parts — or use `lpm.paint(part, colour, where=...)` to recolour faces by position/normal/index.
+- **Never leave two parts coplanar** (a lid end cap on the body's side plane, a strap flush with a panel). Overlap by ≥ 2 mm or stand proud by ≥ 2 mm. Coplanar faces z-fight in the viewport and render black seams in Cycles (shadow rays hit the twin face).
 - `finish` welds vertices closer than 0.5 mm; overlapping parts are fine (they are one object, not one manifold) — the engine does not care, the silhouette does.
 - Always run through `bl.py` so Blender starts from factory settings and the run is reproducible.
