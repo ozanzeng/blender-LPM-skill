@@ -29,7 +29,7 @@ for x in (-W * 0.33, 0.0, W * 0.33):
         import math
         run = (D + 0.02) * (1 - 0.55) / 2
         ang = math.degrees(math.atan2(LID_H, run))
-        length = math.hypot(LID_H, run) + 0.02
+        length = math.hypot(LID_H, run) - 0.012          # stop just under the ridge cap, no tabs poking above it
         s = lpm.box(f"lidstrap_{x:+.2f}_{sy}", (0.07, 0.014, length), at=(x, 0, 0), color=P["bronze"])
         lpm.rotate(s, sy * (90 - ang), "X", about=(0, 0, 0))
         lpm.move(s, 0, sy * ((D + 0.02) / 2 - 0.004), TOP + LID_RIM - 0.004)
