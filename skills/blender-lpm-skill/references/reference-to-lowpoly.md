@@ -134,6 +134,34 @@ Two traps worth remembering: a mesh that round-trips through OBJ picks up an axi
 90° yaw — you see it as "the texture is on the wrong side"), and a comparison that rescales both images to their own
 bounding box cannot measure registration at all.
 
+
+## The mandatory held-out test (learned the hard way)
+
+A reconstruction scored only on the views it was built from is **not evaluated at all**. A visual hull + projective
+texturing reproduces its own four views at 98 % and can still look broken from 45°, because between the views both
+the surface and its colour are invented: the hull surface is unconstrained, the projection stretches, the view
+handover leaves a seam down the middle of a face, and horizontal surfaces no view sees get smeared with a side
+projection.
+
+**Always keep one view out.** `scripts/find_view.py` sweeps azimuth/elevation to find the camera a held-out
+reference was rendered from, then `score_views.py` scores it. Measured on the lion altar, against the original
+three-quarter concept that no step used:
+
+| Build | held-out IoU | held-out SSIM | verdict |
+| --- | ---: | ---: | --- |
+| visual hull + projection | 0.863 | 0.589 | seams, smears — unusable at 45° |
+| local generator (octree 256, 30 steps) + projection | 0.880 | 0.615 | pose wrong |
+| paid generator + its own PBR | 0.878 | 0.654 | good |
+| **local generator (octree 384, 50 steps) + projection** | **0.887** | 0.621 | **best; delivered** |
+
+Consequences for the procedure:
+- Hulls are for **silhouette-locked props** and for measuring, not for figures seen from arbitrary angles.
+- Figures need geometry with a 3D prior: `hy3d_local_mv.py` at **octree ≥ 384 and ≥ 50 steps** (the low settings
+  produce a plausible-from-4-views blob), then texture with `bake_registered.py --fit-mesh --top-color auto`
+  (`--fit-mesh` re-solves the mapping for that mesh; `--top-color` stops upward faces being painted with a side view).
+- Report both numbers: the four training views (how faithful the texture is) and the held-out view (whether the
+  object is actually right).
+
 ## PBR = definitions only
 
 Every colour is a palette cell with `(name, baseColor hex, metallic, roughness[, emission])`. `export_unity()`

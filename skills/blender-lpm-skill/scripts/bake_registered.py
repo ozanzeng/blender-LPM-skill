@@ -31,6 +31,8 @@ def parse():
     p.add_argument("--bake-margin", type=int, default=16)
     p.add_argument("--flat", action="store_true"); p.add_argument("--power", type=float, default=3.0, help="view-weight sharpness")
     p.add_argument("--no-bake", action="store_true", help="keep the live projection material instead of baking an atlas (upper bound test)")
+    p.add_argument("--fit-mesh", action="store_true", help="re-solve the per-view mapping from THIS mesh's extents (use when the mesh is not the hull the frame was solved for)")
+    p.add_argument("--top-color", default="", help="'auto' or #hex: adds a constant pseudo-view for upward faces so horizontal surfaces no view sees are not smeared with a side projection")
     return p.parse_args(argv)
 
 
@@ -61,6 +63,16 @@ def main():
     # projection UVs from the tilt-aware mapping solved by exact_hull.py (frame.json)
     elev = fr.get("elev", 0.0); mp = fr["map"]
     bas = {v: basis(v, elev) for v in order}
+    if a.fit_mesh:
+        inner = fr["inner_px"]
+        for v in order:
+            r, u, _d = bas[v]
+            prs = [co.dot(r) for co in (vt.co for vt in me.vertices)]
+            pus = [co.dot(u) for co in (vt.co for vt in me.vertices)]
+            umin, umax = min(pus), max(pus)
+            mp[v] = {"centre_r": 0.5 * (min(prs) + max(prs)), "u_min": umin, "u_max": umax,
+                     "scale_px_per_m": inner / max(umax - umin, 1e-6)}
+        json.dump(fr, open(os.path.abspath(a.frame), "w"), indent=2)
     for v in order:
         r, u, _d = bas[v]; m = mp[v]; scale = m["scale_px_per_m"]
         layer = me.uv_layers.new(name=f"proj_{v}")
@@ -106,6 +118,26 @@ def main():
             nt.links.new(sum_c, addc.inputs[0]); nt.links.new(cw.outputs["Vector"], addc.inputs[1]); sum_c = addc.outputs["Vector"]
             addw = nt.nodes.new("ShaderNodeMath"); addw.operation = "ADD"
             nt.links.new(sum_w, addw.inputs[0]); nt.links.new(wa.outputs["Value"], addw.inputs[1]); sum_w = addw.outputs["Value"]
+    if a.top_color:
+        if a.top_color.lower() == "auto":
+            tc = fill_lin
+        else:
+            hx = a.top_color.lstrip("#"); srgb = [int(hx[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+            tc = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in srgb]
+        dz = nt.nodes.new("ShaderNodeVectorMath"); dz.operation = "DOT_PRODUCT"; dz.inputs[1].default_value = (0.0, 0.0, 1.0)
+        nt.links.new(geo.outputs["Normal"], dz.inputs[0])
+        mz = nt.nodes.new("ShaderNodeMath"); mz.operation = "MAXIMUM"; mz.inputs[1].default_value = 0.0
+        nt.links.new(dz.outputs["Value"], mz.inputs[0])
+        pz = nt.nodes.new("ShaderNodeMath"); pz.operation = "POWER"; pz.inputs[1].default_value = max(a.power, 2.0)
+        nt.links.new(mz.outputs["Value"], pz.inputs[0])
+        gz = nt.nodes.new("ShaderNodeMath"); gz.operation = "MULTIPLY"; gz.inputs[1].default_value = 1.6
+        nt.links.new(pz.outputs["Value"], gz.inputs[0])
+        cz = nt.nodes.new("ShaderNodeVectorMath"); cz.operation = "SCALE"; cz.inputs[0].default_value = (*tc,)
+        nt.links.new(gz.outputs["Value"], cz.inputs["Scale"])
+        addc = nt.nodes.new("ShaderNodeVectorMath"); addc.operation = "ADD"
+        nt.links.new(sum_c, addc.inputs[0]); nt.links.new(cz.outputs["Vector"], addc.inputs[1]); sum_c = addc.outputs["Vector"]
+        addw = nt.nodes.new("ShaderNodeMath"); addw.operation = "ADD"
+        nt.links.new(sum_w, addw.inputs[0]); nt.links.new(gz.outputs["Value"], addw.inputs[1]); sum_w = addw.outputs["Value"]
     safe = nt.nodes.new("ShaderNodeMath"); safe.operation = "MAXIMUM"; safe.inputs[1].default_value = 1e-4
     nt.links.new(sum_w, safe.inputs[0])
     div = nt.nodes.new("ShaderNodeVectorMath"); div.operation = "DIVIDE"

@@ -31,7 +31,7 @@ that turns a brief into a finished, exported, measured asset in one headless run
    then `python scripts/gate_report.py <Name>.inspect.json --class <static-prop|hard-surface|environment-module|character> --budget <n>`.
    PASS required: budget, transforms applied, base at z = 0, UVs present, no empty slots, no degenerate faces,
    no loose vertices.
-7. **Deliver**: `<Name>.blend`, `<Name>.fbx` (Unity axes −Z forward / Y up), `tex/<Name>_BaseColor.png`,
+8. **Deliver**: `<Name>.blend`, `<Name>.fbx` (Unity axes −Z forward / Y up), `tex/<Name>_BaseColor.png`,
    `tex/<Name>_MaskMap.png` (R metallic · G AO · A smoothness), plus the contact sheet and the gate report.
    Bundle prompt + recipe + metrics + renders into one shareable file with
    `python scripts/asset_card.py --name <Name> --prompt "<brief>" --recipe <recipe.py> --render <png> … --out <Name>_card.html`
