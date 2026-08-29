@@ -113,6 +113,9 @@ def main() -> int:
         vol &= Tm.T[:, :, None]
     if a.mirror:
         vol = vol | vol[::-1, :, :]
+    # close cavities left by inconsistent generated views (internal holes cannot be real for a solid statue)
+    from skimage.morphology import remove_small_holes
+    vol = remove_small_holes(vol, area_threshold=max(64, int(vol.size * 0.002)))
     from skimage import measure
     padded = np.pad(vol.astype(np.float32), 1)
     verts, faces, _n, _v = measure.marching_cubes(padded, level=0.5)

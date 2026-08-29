@@ -65,7 +65,18 @@ missing part, part too small, camera yaw off by 90°.
 Three-quarter references cannot reach ortho-level IoU (perspective, unknown elevation, painted highlights); judge
 them by the table + sheet, not by IoU alone. Deliver `.blend`, `.fbx`, textures, sheet, overlay, gates, asset card.
 
-## Organic parts (lion, eagle, skull, faces, animals) — two routes, both ours
+## Organic parts (lion, eagle, skull, faces, animals) — three routes
+
+**Route C — multi-view generator (when the brief demands near-identical reproduction):** with a consistent
+front / back / left / right sheet (hand-made or from `make_turnaround.py`), `scripts/multiview_to_mesh.py` sends the
+four views to fal `hunyuan3d-v3/image-to-3d` (multi-view conditioning, `enable_pbr`) and downloads a textured mesh;
+`scripts/gen_to_lowpoly.py` orients, scales to the real height, decimates to the budget keeping UVs, and exports
+`.blend/.fbx`; `scripts/gltf_pbr_to_unity.py` converts the glTF PBR set into BaseColor / Normal / MaskMap at 2048 px.
+Lion altar from the 4-view sheet: 120 k tris in 168 s, ortho IoU **front 0.92 / side 0.95 / back 0.96** — the lion's
+face, mane and legs are real. Cost: one fal run (state it first). Route C is the only route that reaches the
+"looks like the reference" bar for figures; A and B stay for props and silhouettes.
+
+
 
 **Route A — faceted primitives** (`kit.blob / wedge / limb` + lathe mane): fast, cheap, but reads as "a four-legged
 animal" rather than a lion (lion altar: quarter IoU 0.77, ortho 0.86/0.85, looked like a dog).

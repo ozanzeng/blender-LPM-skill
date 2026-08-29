@@ -104,6 +104,13 @@ _work/<asset>/
 </tr>
 </table>
 
+## Figures from a 4-view sheet (Route C)
+
+For figures that must match a reference (a lion, an eagle, a skull), primitives and silhouette hulls are not enough.
+`multiview_to_mesh.py` sends a front/back/left/right sheet to Hunyuan3D v3 (via fal.ai), `gen_to_lowpoly.py` orients,
+scales and decimates the result keeping UVs, and `gltf_pbr_to_unity.py` packs the PBR set for Unity URP. The Roman
+lion altar came back with a real faceted lion at orthographic IoU 0.92 / 0.95 / 0.96 against the sheet.
+
 <img src="docs/images/scutum_overlay.png" height="260" align="right" alt="silhouette overlay">
 
 **Reference matching:** `compare_silhouette.py` overlays a render on your concept art (red = reference only, green = model only, yellow = match) and reports IoU, aspect and centroid errors. The scutum went from IoU 0.78 / 23 % aspect error to **IoU 0.95 / 0.9 %** by changing two numbers in its recipe.
