@@ -26,7 +26,7 @@ Lion altar result: 3/4-only workflow reached IoU 0.77; with the turnaround, orth
 | Proportions | cup ⌀ ≈ 0.5 × plate width; torch height ≈ 1.2 × plate height; arm length ≈ plate width |
 | Palette cells | iron, gold, red, stone, stone_dark, flame, flame_core, coal |
 | Symmetry | torch radial; plate mirror-X |
-| Organic parts? | none (lion, eagle, skull → faceted primitives, see below) |
+| Organic parts? | lion → visual hull from the turnaround (route B) + primitive face features |
 
 Rules: 6–20 parts; every part maps to `box / grid_box / prism / lathe / sweep / plate` or a `lpm_kit` builder
 (`banner, medallion, rivets, meander_band, block_course, flame, handle_arc, column, plinth_steps, wall_ring, ring_of`).
@@ -65,20 +65,30 @@ missing part, part too small, camera yaw off by 90°.
 Three-quarter references cannot reach ortho-level IoU (perspective, unknown elevation, painted highlights); judge
 them by the table + sheet, not by IoU alone. Deliver `.blend`, `.fbx`, textures, sheet, overlay, gates, asset card.
 
-## Organic parts (lion, eagle, skull, faces, animals) — still primitives
+## Organic parts (lion, eagle, skull, faces, animals) — two routes, both ours
 
-Build them as **faceted stand-ins**, top-down, 8–14 parts, each a kit organic builder:
+**Route A — faceted primitives** (`kit.blob / wedge / limb` + lathe mane): fast, cheap, but reads as "a four-legged
+animal" rather than a lion (lion altar: quarter IoU 0.77, ortho 0.86/0.85, looked like a dog).
 
-| Body part | Builder | Notes |
-| --- | --- | --- |
-| torso, haunch, head, skull | `kit.blob(size=(x,y,z), segments=8, rings=4–5)` | squash/scale for ellipsoids; two blobs for chest + hindquarters |
-| muzzle, beak, ears, claws | `kit.wedge` | direction toward the face |
-| legs, arms, tail, neck | `kit.limb(r0, r1, length, pitch, yaw)` | 6 sides; tail = 2 chained limbs |
-| mane, ruff, feathers | `lathe` collar / `sweep` spiky outline | mane = lathe with a wavy 6-point profile |
-| eyes, nostrils | `paint()` on the head blob or tiny dark prisms | read-ability > accuracy |
+**Route B — visual hull from the turnaround** (`scripts/shape_from_views.py` → `scripts/hull_to_lowpoly.py`):
+the front/side/back(/top) masks are extruded through a voxel grid and intersected (shape-from-silhouette), the
+surface is extracted with marching cubes, smoothed, planar+collapse-decimated to the budget, flat-shaded, and
+imported into the recipe as a part carrying the palette cell (`lpm_color`) — one material, one mesh, same pipeline.
 
-Accept organic stand-ins at silhouette IoU ≥ 0.65 (3/4 view) when the 5-view sheet reads as the animal. Symmetry by
-`mirror_x`. Budget: figure ≤ 50 % of the asset budget.
+```
+python scripts/shape_from_views.py --front T/x_front.png --side T/x_side.png --back T/x_back.png --height 1.7 --res 160 --dilate 1 --mirror \
+       --region-front 0,0,1,0.47 --region-side 0,0,1,0.47 --region-back 0,0,1,0.47 --out hull/lion_hull.obj      # crop each view to the figure
+python scripts/bl.py --script scripts/hull_to_lowpoly.py -- --obj hull/lion_hull.obj --budget 1400 --smooth 10 --planar 8 --out hull/lion_lp.blend
+# recipe: import hull/lion_lp.obj, set lpm_color, append to parts -> lpm.finish()   (see examples/env_lion_altar_hull.py)
+```
+Lion altar hybrid (primitive pedestal + hull lion): 2 880 tris, ortho front 0.88 / side 0.87 — the side reads as a
+sitting lion. Needs `scikit-image` in the host Python (`pip install scikit-image`).
+
+What the hull cannot do: concavities (eye sockets, mouth, gaps between mane layers). Options, in order of cost:
+1. add the features as primitives on top of the hull (eye wedges, nose box, ear wedges) — 20 tris, 5 minutes;
+2. carve the front surface with a monocular depth map (Depth Anything V2 / MoGe-2) — relative depth, calibrate the
+   range with the side view; 3. accept the statue as a "stone lion" silhouette. Generated views are not pixel-consistent:
+   `--dilate 1–2` keeps the hull from thinning; `--mirror` enforces symmetry from the better half.
 
 ## PBR = definitions only
 
