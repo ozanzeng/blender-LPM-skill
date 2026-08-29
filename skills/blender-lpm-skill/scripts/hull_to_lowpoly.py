@@ -32,7 +32,7 @@ def tris(ob):
 def main():
     a = parse()
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    bpy.ops.wm.obj_import(filepath=os.path.abspath(a.obj), forward_axis="Y", up_axis="Z")
+    bpy.ops.wm.obj_import(filepath=os.path.abspath(a.obj), forward_axis="NEGATIVE_Y", up_axis="Z")   # identity: the file is already in Blender axes
     ob = bpy.context.selected_objects[0]; ob.name = a.name; ob.data.name = a.name
     bpy.context.view_layer.objects.active = ob
     print("hull tris", tris(ob))
@@ -59,7 +59,7 @@ def main():
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     out = os.path.abspath(a.out); os.makedirs(os.path.dirname(out), exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=out)
-    bpy.ops.wm.obj_export(filepath=out[:-6] + ".obj", forward_axis="Y", up_axis="Z", export_selected_objects=False, export_materials=False)
+    bpy.ops.wm.obj_export(filepath=out[:-6] + ".obj", forward_axis="NEGATIVE_Y", up_axis="Z", export_selected_objects=False, export_materials=False)   # identity
     print("##JSON##" + str({"blend": out, "tris": tris(ob), "budget": a.budget, "dims": [round(c, 3) for c in ob.dimensions]}).replace("'", '"'))
 
 

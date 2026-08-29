@@ -110,6 +110,30 @@ What the hull cannot do: concavities (eye sockets, mouth, gaps between mane laye
    range with the side view; 3. accept the statue as a "stone lion" silhouette. Generated views are not pixel-consistent:
    `--dilate 1–2` keeps the hull from thinning; `--mirror` enforces symmetry from the better half.
 
+
+## Exact reproduction from a 4-view sheet (no paid service) — the measured pipeline
+
+When the brief is "match this reference sheet", the answer is not a generator: it is a **calibrated visual hull plus
+projective texturing**, and a metric that can tell you when you are done. Measured on the Roman lion altar:
+silhouette IoU **0.972**, interior RGB RMSE **0.022**, SSIM **0.993**, **98.5 %** of pixels within 5 % — while
+shifting the reference by a single pixel already costs RMSE 0.035. Cost: $0, ~6 minutes on an RTX 3070 Ti.
+
+| Step | Script | What it does / why |
+| --- | --- | --- |
+| 1 | `register_views.py` | Puts all views in one frame (same height, base line, centre) and bleeds the object colour into the transparent border. Reports how consistent the sheet is (this one: heights within 0.4 %). Everything downstream depends on this. |
+| 2 | `calibrate_elevation.py` | Concept sheets are rarely level. Hold-one-out carving finds the elevation (~3° here). |
+| 3 | `exact_hull.py` | Tilt-aware visual hull on a voxel grid, extents solved by iteration; writes `hull.npz` **and** `frame.json` (the exact world↔image mapping every later step reuses). Voxel-vs-mask agreement 0.98–0.99. |
+| 4 | `hull_prep.py` | Marching-cubes mesh → weld → planar + collapse decimation to the budget. Loads the `.npz` directly: **never round-trip a mesh through OBJ/FBX between these steps** — an axis conversion silently rotated the model and cost a day. |
+| 5a | `bake_registered.py` | Projects the views with the `frame.json` mapping and bakes one atlas, weighting each view by `max(0, N·d)^k`. Seamless; the delivery default. |
+| 5b | `atlas_from_views.py` | Packs the four views into a 2×2 atlas and points each face at its dominant quadrant. Texels are the reference pixels 1:1 (SSIM 0.990) but view switches leave hard seams. Use for hero shots from the canonical angles. |
+| 6 | `pbr_from_basecolor.py` | Classifies metal (gold/bronze) from the baked colour → MaskMap (R metallic, G AO, A smoothness) + `materials.json`. PBR stays a *definition*, no generated maps. |
+| 7 | `wire_pbr_export.py` | Wires the maps, adds the box collider, exports the Unity FBX. |
+| ✔ | `render_ref_views.py` + `score_views.py` | Renders from the reference cameras (unlit) and scores. **Use `--raw`**: normalising each image to its bounding box hides a 2 % silhouette difference as a 3-pixel blur and made the pipeline look four times worse than it was. |
+
+Two traps worth remembering: a mesh that round-trips through OBJ picks up an axis conversion (front/back swap or a
+90° yaw — you see it as "the texture is on the wrong side"), and a comparison that rescales both images to their own
+bounding box cannot measure registration at all.
+
 ## PBR = definitions only
 
 Every colour is a palette cell with `(name, baseColor hex, metallic, roughness[, emission])`. `export_unity()`
