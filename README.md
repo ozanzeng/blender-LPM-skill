@@ -111,7 +111,14 @@ For figures that must match a reference (a lion, an eagle, a skull), primitives 
 scales and decimates the result keeping UVs, and `gltf_pbr_to_unity.py` packs the PBR set for Unity URP. The Roman
 lion altar came back with a real faceted lion at orthographic IoU 0.92 / 0.95 / 0.96 against the sheet.
 
-<img src="docs/images/lion_altar_routeC.png" width="560" alt="Roman lion altar, route C, 8 000 tris, Cycles">
+**Free variant (no paid service):** `hy3d_local_mv.py` runs the open-weights `tencent/Hunyuan3D-2mv` on the local GPU
+(shape only, ~6 GB VRAM) and `project_views_bake.py` textures the mesh by projecting the four reference views and
+baking them into one atlas in Blender. Same lion: ortho IoU 0.91 / 0.93 / 0.95, cost $0.
+
+<table><tr>
+<td align="center"><img src="docs/images/lion_altar_routeC.png" width="440"><br><sub>Route C — fal.ai Hunyuan3D v3 + generator PBR</sub></td>
+<td align="center"><img src="docs/images/lion_altar_local.png" width="440"><br><sub>Route C-local — open weights on the RTX 3070 Ti + projection-baked texture</sub></td>
+</tr></table>
 
 <img src="docs/images/scutum_overlay.png" height="260" align="right" alt="silhouette overlay">
 

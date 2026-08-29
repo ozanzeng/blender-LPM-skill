@@ -82,7 +82,8 @@ face, mane and legs are real. Cost: one fal run (state it first). Route C is the
 `scripts/project_views_bake.py`: the four reference views are projected orthographically onto the mesh (per-face
 view choice by horizontal normal, alpha-masked references, fill colour for edges) and baked into one atlas.
 Setup notes: HF anonymous downloads via the xet bridge stalled — set `HF_HUB_ENABLE_HF_TRANSFER=1` and
-`HF_HUB_DISABLE_XET=1` (12 MB/s afterwards); on 8 GB cards use `--octree 256 --chunks 8000`.
+`HF_HUB_DISABLE_XET=1` (12 MB/s afterwards); on 8 GB cards use `--octree 256 --chunks 8000`. Lion altar, local: 558 k faces, ortho IoU 0.91 / 0.93 / 0.95, textured by
+projection bake — equal to the paid run.
 
 
 
