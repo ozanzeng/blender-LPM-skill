@@ -111,6 +111,8 @@ For figures that must match a reference (a lion, an eagle, a skull), primitives 
 scales and decimates the result keeping UVs, and `gltf_pbr_to_unity.py` packs the PBR set for Unity URP. The Roman
 lion altar came back with a real faceted lion at orthographic IoU 0.92 / 0.95 / 0.96 against the sheet.
 
+<img src="docs/images/lion_altar_routeC.png" width="560" alt="Roman lion altar, route C, 8 000 tris, Cycles">
+
 <img src="docs/images/scutum_overlay.png" height="260" align="right" alt="silhouette overlay">
 
 **Reference matching:** `compare_silhouette.py` overlays a render on your concept art (red = reference only, green = model only, yellow = match) and reports IoU, aspect and centroid errors. The scutum went from IoU 0.78 / 23 % aspect error to **IoU 0.95 / 0.9 %** by changing two numbers in its recipe.
