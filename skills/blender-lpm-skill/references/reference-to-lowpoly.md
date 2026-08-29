@@ -76,6 +76,14 @@ Lion altar from the 4-view sheet: 120 k tris in 168 s, ortho IoU **front 0.92 / 
 face, mane and legs are real. Cost: one fal run (state it first). Route C is the only route that reaches the
 "looks like the reference" bar for figures; A and B stay for props and silhouettes.
 
+**Route C-local — no paid service:** the same model family has open weights. `scripts/hy3d_local_mv.py` runs
+`tencent/Hunyuan3D-2mv` (multi-view DiT, shape only, ~6 GB VRAM, no compiled extensions) in a local venv
+(`C:\ppx\hy3d\.venv`, Python 3.11 via uv, torch cu124). Texturing is then done **for free in Blender** by
+`scripts/project_views_bake.py`: the four reference views are projected orthographically onto the mesh (per-face
+view choice by horizontal normal, alpha-masked references, fill colour for edges) and baked into one atlas.
+Setup notes: HF anonymous downloads via the xet bridge stalled — set `HF_HUB_ENABLE_HF_TRANSFER=1` and
+`HF_HUB_DISABLE_XET=1` (12 MB/s afterwards); on 8 GB cards use `--octree 256 --chunks 8000`.
+
 
 
 **Route A — faceted primitives** (`kit.blob / wedge / limb` + lathe mane): fast, cheap, but reads as "a four-legged
