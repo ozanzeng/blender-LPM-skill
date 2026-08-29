@@ -44,7 +44,8 @@ Follow [references/reference-to-lowpoly.md](references/reference-to-lowpoly.md):
 primitives/kit builders, proportions as ratios, camera angle, palette, organic parts), then recipe, then a quarter
 render at the reference's camera + `compare_silhouette.py`, max 3 iterations, accept by IoU/aspect + the 5-view sheet.
 Kit builders for Roman/stylized sets live in `scripts/lpm_kit.py` (banner, medallion, rivets, meander band, block
-course, flame, handle arc, column, plinth steps, wall ring, ring_of). Organic parts go to the fal.ai lane.
+course, flame, handle arc, column, plinth steps, wall ring, ring_of) plus organic stand-ins (`blob`, `wedge`, `limb`).
+Organic parts are built from those — faceted, readable, cheap — not generated.
 
 ## Style rules
 
@@ -52,9 +53,10 @@ course, flame, handle arc, column, plinth steps, wall ring, ring_of). Organic pa
   and shafts, 10–16 for hero wheels and shields. Never subdivide.
 - **Silhouette > surface.** Spend triangles where the outline changes (tips, guards, crests, capitals); flat
   regions are single quads.
-- **Palette, not textures.** One material, one 8×N-cell palette image (`Closest` interpolation), each face's UV in
-  the centre of its cell; metallic / smoothness live in the matching MaskMap palette. No bakes, no seams, no
-  texel-density worries. Detail like rings, bands and rivets is *geometry* so it shows in the palette.
+- **PBR = definitions, not textures.** One material, one 8×N-cell palette image (`Closest` interpolation), each
+  face's UV in the centre of its cell. Every cell is a *definition*: `(name, baseColor, metallic, roughness[, emission])`
+  — exported as `<Name>.materials.json` (URP Lit parameter names) next to the tiny palette PNGs. No bakes, no
+  generated textures, no seams. Detail like rings, bands and rivets is *geometry* so it shows in the palette.
 - **Real scale.** 1 unit = 1 m; a gladius is 0.65 m, a scutum 1.05 m, a helmet 0.30 m, a door 2.2 m.
   Base on z = 0, centred on x = 0, pivot at the base centre (props) or the snapping corner (kit modules).
 - **Read-ability at 3 m**: contrast between neighbouring parts (wood next to steel next to bronze); avoid two
@@ -90,7 +92,7 @@ screenshot/render tool instead of `render_views.py`. The procedure does not chan
 
 ## Do not
 
-- Do not decimate a high-poly mesh and call it low-poly; rebuild from primitives.
+- Do not decimate a high-poly mesh and call it low-poly; rebuild from primitives. Do not call generators.
 - Do not add a normal map to fake detail on a flat-shaded asset.
 - Do not accept an asset from one flattering view; the side and top views expose thickness and proportion errors.
 - Do not exceed the budget "just a little": remove a facet ring, merge two parts, or drop a rivet.

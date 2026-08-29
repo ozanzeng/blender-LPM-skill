@@ -66,7 +66,8 @@ class Palette:
     """Ordered colour cells. Index by name: P["steel"] -> cell index."""
 
     def __init__(self, entries, cell=16):
-        self.entries = [(e[0], e[1], float(e[2]) if len(e) > 2 else 0.0, float(e[3]) if len(e) > 3 else 0.8) for e in entries]
+        # (name, hex, metallic, roughness, emission_strength) - emission optional (flames, embers, glowing runes)
+        self.entries = [(e[0], e[1], float(e[2]) if len(e) > 2 else 0.0, float(e[3]) if len(e) > 3 else 0.8, float(e[4]) if len(e) > 4 else 0.0) for e in entries]
         self.cell = cell
         self.cols = max(1, min(8, len(self.entries)))
         self.rows = math.ceil(len(self.entries) / self.cols)
@@ -86,7 +87,7 @@ class Palette:
         mask.colorspace_settings.name = "Non-Color"
         bpx = [0.0] * (w * h * 4)
         mpx = [0.0] * (w * h * 4)
-        for i, (_n, hx, metal, rough) in enumerate(self.entries):
+        for i, (_n, hx, metal, rough, _em) in enumerate(self.entries):
             r, c = divmod(i, self.cols)
             lin = [_srgb_to_linear(v) for v in _hex(hx)]
             for y in range(r * self.cell, (r + 1) * self.cell):
@@ -99,6 +100,11 @@ class Palette:
         mask.pixels = mpx
         base.pack(); mask.pack()
         return base, mask
+
+    def definitions(self):
+        """PBR *definitions* (no baked textures): one entry per palette cell, Unity/URP Lit parameter names."""
+        return [{"cell": i, "name": n, "baseColor": hx, "metallic": m, "smoothness": round(1.0 - r, 3), "roughness": r,
+                 "emission": em, "uv_center": [round(v, 4) for v in self.uv(i)]} for i, (n, hx, m, r, em) in enumerate(self.entries)]
 
     def material(self, name):
         base, mask = self.images(name)
@@ -113,7 +119,24 @@ class Palette:
         nt.links.new(sep.outputs["Red"], bsdf.inputs["Metallic"])
         inv = nt.nodes.new("ShaderNodeMath"); inv.operation = "SUBTRACT"; inv.inputs[0].default_value = 1.0
         nt.links.new(tm.outputs["Alpha"], inv.inputs[1]); nt.links.new(inv.outputs[0], bsdf.inputs["Roughness"])
+        if any(e[4] > 0 for e in self.entries):        # emission from the base colour, masked per cell via a second palette image
+            emi = bpy.data.images.new(f"{name}_Emission", base.size[0], base.size[1], alpha=False)
+            px = [0.0] * (base.size[0] * base.size[1] * 4)
+            w = base.size[0]
+            for i, (_n, hx, _m, _r, em) in enumerate(self.entries):
+                if em <= 0: continue
+                r_, c_ = divmod(i, self.cols); lin = [_srgb_to_linear(v) * em for v in _hex(hx)]
+                for y in range(r_ * self.cell, (r_ + 1) * self.cell):
+                    yy = base.size[1] - 1 - y
+                    for x in range(c_ * self.cell, (c_ + 1) * self.cell):
+                        o = (yy * w + x) * 4; px[o:o + 4] = [lin[0], lin[1], lin[2], 1.0]
+            emi.pixels = px; emi.pack()
+            te = nt.nodes.new("ShaderNodeTexImage"); te.image = emi; te.interpolation = "Closest"
+            nt.links.new(te.outputs["Color"], bsdf.inputs["Emission Color"])
+            bsdf.inputs["Emission Strength"].default_value = 1.0
+            m["lpm_emission_image"] = emi.name
         m["lpm_base_image"] = base.name; m["lpm_mask_image"] = mask.name
+        m["lpm_palette_json"] = json.dumps(self.definitions())
         return m
 
 
@@ -425,7 +448,8 @@ def export_unity(ob, out_stem, glb=False, extra=()):
     os.makedirs(tex_dir, exist_ok=True)
     m = ob.data.materials[0]
     written = {}
-    for key, suffix in (("lpm_base_image", "BaseColor"), ("lpm_mask_image", "MaskMap")):
+    for key, suffix in (("lpm_base_image", "BaseColor"), ("lpm_mask_image", "MaskMap"), ("lpm_emission_image", "Emission")):
+        if key not in m: continue
         img = bpy.data.images[m[key]]
         img.filepath_raw = os.path.join(tex_dir, f"{ob.name}_{suffix}.png")
         img.file_format = "PNG"
@@ -440,6 +464,21 @@ def export_unity(ob, out_stem, glb=False, extra=()):
                              object_types={"MESH"}, bake_anim=False, path_mode="COPY", embed_textures=False)
     if glb:
         bpy.ops.export_scene.gltf(filepath=out_stem + ".glb", use_selection=True, export_format="GLB")
+    # PBR definitions (the contract for Unity materials) + per-cell face usage
+    attr = ob.data.attributes.get("lpm_color")
+    usage = {}
+    if attr:
+        for i in range(len(ob.data.polygons)):
+            usage[attr.data[i].value] = usage.get(attr.data[i].value, 0) + 1
+    defs = json.loads(m.get("lpm_palette_json", "[]"))
+    for d in defs:
+        d["faces"] = usage.get(d["cell"], 0)
+    mat_json = out_stem + ".materials.json"
+    with open(mat_json, "w", encoding="utf-8") as f:
+        json.dump({"asset": ob.name, "material": m.name, "shader": "Universal Render Pipeline/Lit", "palette_size": [bpy.data.images[m["lpm_base_image"]].size[0], bpy.data.images[m["lpm_base_image"]].size[1]],
+                   "textures": {k: os.path.basename(v) for k, v in written.items()}, "maskmap_layout": "R=metallic G=occlusion B=unused A=smoothness",
+                   "cells": [d for d in defs if d["faces"] > 0]}, f, indent=2)
+    written["MaterialsJson"] = mat_json
     blend = save(out_stem + ".blend")
     rep = report(ob); rep.update({"blend": blend, "fbx": out_stem + ".fbx", "textures": written,
                                   "extra_objects": [{"name": e.name, "tris": tri_count(e)} for e in extra]})

@@ -173,6 +173,38 @@ def column(name, radius, height, at=(0, 0, 0), color=0, base=None, cap=None, sid
     return parts
 
 
+def blob(name, size, at=(0, 0, 0), color=0, segments=8, rings=5, squash=1.0):
+    """Faceted ellipsoid (heads, bodies, haunches, fruit). `size` = (x, y, z) full extents; `at` = base centre.
+    Built as a lathe sphere then scaled - stays flat-shaded and cheap (segments*rings*2 tris)."""
+    sx, sy, sz = size
+    profile = [(0.0, 0.0)]
+    for i in range(1, rings):
+        a = math.pi * i / rings
+        profile.append((0.5 * math.sin(a), 0.5 * (1 - math.cos(a))))
+    profile.append((0.0, 1.0))
+    b = lpm.lathe(name, profile, segments=segments, at=(0, 0, 0), color=color)
+    lpm.scale(b, sx, sy, sz * squash, about=(0, 0, 0))
+    lpm.move(b, *at)
+    return b
+
+
+def wedge(name, size, at=(0, 0, 0), color=0, direction="-y"):
+    """Tapered block that ends in an edge (muzzles, beaks, blades, brackets): full-size at the back, edge at the front."""
+    sx, sy, sz = size
+    b = lpm.box(name, (sx, sy, sz), at=(0, 0, 0), color=color, taper=(0.15, 1.0))   # tapers in x toward the top
+    lpm.rotate(b, {"-y": -90, "+y": 90, "-x": 0, "+x": 180}[direction], "X" if direction in ("-y", "+y") else "Y", about=(0, 0, 0))
+    lpm.move(b, *at)
+    return b
+
+
+def limb(name, r0, r1, length, at=(0, 0, 0), color=0, pitch=0.0, yaw=0.0, sides=6):
+    """Leg / arm / tail segment: tapered prism from `at` (joint) pointing down, then pitched/yawed."""
+    p = lpm.prism(name, sides, r0, length, at=(0, 0, -length), color=color, radius_top=r1)
+    lpm.rotate(p, pitch, "X", about=(0, 0, 0)); lpm.rotate(p, yaw, "Z", about=(0, 0, 0))
+    lpm.move(p, *at)
+    return p
+
+
 def plinth_steps(name, width, depth, heights, at=(0, 0, 0), color=0, inset=0.12):
     """Stacked stepped base: list of heights bottom->top, each level inset."""
     parts, z, w, d = [], at[2], width, depth
