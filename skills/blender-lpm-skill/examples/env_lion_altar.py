@@ -51,22 +51,25 @@ for k in range(6):
 Z = Z1 + 1.41 + 0.07 - 0.004; C, D = P["lion"], P["lion_dark"]
 def at(x, y, z): return (x, y, Z + z)
 parts += [kit.blob("hind", (1.05, 1.05, 0.85), at=at(0, 0.40, 0.04), color=C, segments=8, rings=4),
-          kit.blob("chest", (0.92, 0.95, 1.0), at=at(0, -0.30, 0.22), color=C, segments=8, rings=4),
+          kit.blob("chest", (0.98, 0.92, 1.12), at=at(0, -0.34, 0.24), color=C, segments=8, rings=4),
           kit.blob("belly", (0.80, 1.15, 0.55), at=at(0, 0.05, 0.14), color=C, segments=8, rings=3)]
 mane = lpm.lathe("mane", [(0.0, 0.0), (0.48, 0.04), (0.60, 0.25), (0.58, 0.55), (0.42, 0.78), (0.0, 0.86)], segments=8, at=at(0, -0.42, 0.78), color=D)
 lpm.scale(mane, 1.0, 0.8, 1.0, about=at(0, -0.42, 0.78)); parts.append(mane)
-parts += [kit.blob("head", (0.54, 0.60, 0.50), at=at(0, -0.62, 1.05), color=C, segments=8, rings=4),
+parts += [kit.blob("head", (0.60, 0.64, 0.56), at=at(0, -0.64, 1.10), color=C, segments=8, rings=4),
           kit.wedge("muzzle", (0.36, 0.28, 0.24), at=at(0, -0.90, 1.08), color=C, direction="-y"),
           lpm.box("nose", (0.12, 0.07, 0.07), at=at(0, -1.05, 1.20), color=D),
           lpm.box("jaw", (0.24, 0.22, 0.10), at=at(0, -0.86, 1.02), color=D)]
 for sx in (-1, 1):
     parts += [kit.wedge(f"ear{sx}", (0.12, 0.08, 0.14), at=at(sx * 0.20, -0.52, 1.46), color=D, direction="-y"),
               lpm.box(f"eye{sx}", (0.07, 0.03, 0.04), at=at(sx * 0.12, -0.90, 1.30), color=P["black"]),
-              kit.limb(f"foreleg{sx}", 0.14, 0.11, 0.95, at=at(sx * 0.32, -0.55, 0.95), color=C, pitch=-4),
+              kit.limb(f"foreleg{sx}", 0.15, 0.12, 1.0, at=at(sx * 0.34, -0.58, 1.0), color=C, pitch=0),
               lpm.box(f"forepaw{sx}", (0.28, 0.42, 0.16), at=at(sx * 0.32, -0.72, 0.0), color=C),
               kit.blob(f"haunch{sx}", (0.36, 0.72, 0.62), at=at(sx * 0.48, 0.32, 0.02), color=D, segments=6, rings=3),
               lpm.box(f"hindpaw{sx}", (0.24, 0.44, 0.16), at=at(sx * 0.50, -0.02, 0.0), color=C)]
 parts.append(kit.limb("tail", 0.07, 0.05, 0.85, at=at(0.36, 0.85, 0.32), color=C, pitch=-100, yaw=25))
 parts.append(lpm.prism("tailtuft", 6, 0.09, 0.14, at=at(0.62, 0.95, 0.0), color=D))
+lion_parts = [q for q in parts if q.name.split(".")[0] in ("hind", "chest", "belly", "mane", "head", "muzzle", "nose", "jaw", "tail", "tailtuft") or q.name.startswith(("ear", "eye", "foreleg", "forepaw", "haunch", "hindpaw"))]
+for q in lion_parts:                                     # turnaround measurement: lion = 44 % of total height, shoulders 0.36 H
+    lpm.scale(q, 1.15, 1.15, 1.18, about=(0, 0, Z))
 altar = lpm.finish("SM_LionAltar", parts, P, budget=3000)
 lpm.export_unity(altar, out_stem("_work/lpm/env/lion_altar/SM_LionAltar"), extra=[lpm.collision_box(altar)])

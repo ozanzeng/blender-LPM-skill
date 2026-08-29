@@ -1,15 +1,27 @@
 # Reference image → low-poly model (the promptable procedure)
 
 A concept image (like the Roman environment set: lion altar, stone well, torch sconce, amphora…) becomes a model
-through **five fixed steps**. The prompt only needs to name the image, the size, the budget and the engine — the
-steps below are what the agent does with it. Skipping step 1 is the #1 cause of bad results.
+through **six fixed steps**. The prompt only needs to name the image, the size, the budget and the engine — the
+steps below are what the agent does with it. Skipping steps 0–1 is the #1 cause of bad results.
+
+## 0. Turnaround first (one concept → front / side / back / top)
+
+```
+python scripts/make_turnaround.py --ref <concept.png> --out _work/lpm/env/<asset>/turnaround --extra "<one-line subject description>"
+```
+Uses fal.ai `nano-banana/edit` (≈ $0.04 / view, 4 views ≈ $0.16; state the cost, the key stays in the machine's config).
+Output: `<stem>_front/side/back/top.png` + a sheet. The generated views are consistent enough to **measure**
+proportions (lion = 44 % of total height, pedestal 0.5 H wide…) and to run `compare_silhouette` on orthographic
+renders (`render_views.py --ortho`) with the ortho thresholds (IoU ≥ 0.85). The original concept stays the
+authority for style and colour; when a generated view contradicts it, the concept wins.
+Lion altar result: 3/4-only workflow reached IoU 0.77; with the turnaround, ortho front 0.86 / side 0.85 in one extra round.
 
 ## 1. Read the image → write the audit table BEFORE any code
 
 | Field | Example (torch sconce) |
 | --- | --- |
 | Object & real size | wall torch, ≈1.45 m tall incl. flame, plate 0.45 × 1.0 m |
-| Camera in the image | three-quarter from front-left, elevation ≈ 30°, plate on the right |
+| Camera in the image | three-quarter from front-left, elevation ≈ 30°, plate on the right (plus the generated ortho views from step 0) |
 | Parts, top-down, with primitive | flame (kit.flame) · coals (prism) · cup (lathe) · gold rim + 8 studs (prism + kit.rivets) · cup band (prism) · handle tapered (prism) · 2 gold rings · pointed tip (lathe) · horizontal arm + diagonal brace (box, rotated) · collar (prism) · wall plate rounded slab (sweep) · gold frame + red panel (sweep) · stud (rivet) |
 | Proportions | cup ⌀ ≈ 0.5 × plate width; torch height ≈ 1.2 × plate height; arm length ≈ plate width |
 | Palette cells | iron, gold, red, stone, stone_dark, flame, flame_core, coal |
@@ -25,11 +37,14 @@ Proportions are written as ratios, then converted to metres from the real size.
 One part per table row, positioned in metres, colours from the palette. Kit builders first, primitives second.
 Never coplanar parts (sink ≥ 2 mm). `finish()` → `collision_box()` → `export_unity()`.
 
-## 3. Render at the reference's camera, then compare
+## 3. Render and compare — ortho against the turnaround, quarter against the concept
 
 ```
-render_views.py --views quarter --yaw <deg> --quarter-elev <deg>   # match the image's camera (yaw 90 = plate on the right)
-compare_silhouette.py --ref <image> --render views/quarter.png     # IoU, aspect, centroid, band errors + overlay
+render_views.py --ortho                                            # front/side/back/top orthographic renders
+compare_silhouette.py --ref turnaround/<stem>_front.png --render views/front.png
+compare_silhouette.py --ref turnaround/<stem>_side.png  --render views/side.png
+render_views.py --views quarter --yaw <deg> --quarter-elev <deg>   # optional: the concept's own camera
+compare_silhouette.py --ref <concept.png> --render views/quarter.png
 ```
 Also render the 5-view sheet and **look at it** — the numbers cannot see colour, detail or read-ability.
 
@@ -43,8 +58,9 @@ missing part, part too small, camera yaw off by 90°.
 
 | Reference type | Silhouette IoU | Aspect diff | Plus |
 | --- | ---: | ---: | --- |
-| Orthographic front/side | ≥ 0.90 | ≤ 3 % | gates PASS |
-| Three-quarter concept (most kit images) | ≥ 0.75 | ≤ 5 % | 5-view sheet reads as the object; parts and colours present |
+| Generated turnaround front + side (step 0) | ≥ 0.85 each | ≤ 5 % | gates PASS, 5-view sheet reads as the object |
+| Hand-drawn orthographic front/side | ≥ 0.90 | ≤ 3 % | gates PASS |
+| Three-quarter concept only (no turnaround) | ≥ 0.75 | ≤ 5 % | parts and colours present |
 
 Three-quarter references cannot reach ortho-level IoU (perspective, unknown elevation, painted highlights); judge
 them by the table + sheet, not by IoU alone. Deliver `.blend`, `.fbx`, textures, sheet, overlay, gates, asset card.
@@ -78,8 +94,8 @@ Gerçek boyut: <tek anchor, m>. Bütçe: <n> üçgen (organik parça ≤ %50). H
 Parça ayrımı: tüm parçalar primitif/kit; organik figür (aslan, kartal, kafatası) kit.blob/wedge/limb + lathe ile blok-heykel.
 PBR = tanım: her hücre (baseColor, metallic, roughness[, emission]) → materials.json; doku üretimi/bake yok.
 Kamera: <3/4 sol-ön / sağ-ön, ~N°> (bilinmiyorsa ajan tahmin eder, overlay'de doğrular).
-Önce audit tablosunu yaz (parçalar → primitif/kit builder, oranlar, kamera), sonra tarif, sonra üret.
-Referans kamerasıyla quarter render + compare_silhouette; en fazla 3 iterasyon; kabul: IoU ≥ 0.75 (organik figürlü asset ≥ 0.70), oran farkı ≤ %5, 5-görünüm sayfası okunaklı.
+Adım 0: make_turnaround.py ile ön/yan/arka/üst görünümleri üret (≈ $0.16, maliyeti söyle). Sonra audit tablosunu bu görünümlerden ölçerek yaz (parçalar → primitif/kit builder, oranlar), sonra tarif, sonra üret.
+Ortografik ön+yan render'ı turnaround ile compare_silhouette; en fazla 3 iterasyon; kabul: ön ve yan IoU ≥ 0.85, oran farkı ≤ %5, 5-görünüm sayfası okunaklı.
 Teslim: .blend + .fbx (+_COL) + tex + materials.json + 5-görünüm + overlay + gates + asset card. Kaynak: _work\lpm\env\<asset>\.
 ```
 

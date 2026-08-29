@@ -40,9 +40,11 @@ that turns a brief into a finished, exported, measured asset in one headless run
 
 ## From a reference image (concept art → model)
 
-Follow [references/reference-to-lowpoly.md](references/reference-to-lowpoly.md): **audit table first** (parts →
+Follow [references/reference-to-lowpoly.md](references/reference-to-lowpoly.md): **turnaround first**
+(`scripts/make_turnaround.py`: one concept → front/side/back/top via fal.ai, ≈ $0.16), then the **audit table** (parts →
 primitives/kit builders, proportions as ratios, camera angle, palette, organic parts), then recipe, then a quarter
-render at the reference's camera + `compare_silhouette.py`, max 3 iterations, accept by IoU/aspect + the 5-view sheet.
+ortho front/side renders compared with the turnaround (`compare_silhouette.py`, IoU ≥ 0.85), max 3 iterations, accept by
+IoU/aspect + the 5-view sheet.
 Kit builders for Roman/stylized sets live in `scripts/lpm_kit.py` (banner, medallion, rivets, meander band, block
 course, flame, handle arc, column, plinth steps, wall ring, ring_of) plus organic stand-ins (`blob`, `wedge`, `limb`).
 Organic parts are built from those — faceted, readable, cheap — not generated.
