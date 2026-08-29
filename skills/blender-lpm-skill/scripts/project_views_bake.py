@@ -98,12 +98,12 @@ def main():
                 layer.data[li].uv = (x0 + u * (x1 - x0), 1.0 - (y1 - w * (y1 - y0)))   # image v: 0 at bottom in Blender
     # per-face view choice (attribute) -> material index
     order = list(views)
-    idx_attr = me.attributes.new("proj_view", "INT", "FACE")
+    face_view = []                                           # plain list: attribute handles go stale once UV layers are added
     for poly in me.polygons:
         n = Vector((poly.normal.x, poly.normal.y, 0.0))      # choose by horizontal direction only (tops/bottoms take the nearest side)
         if n.length < 1e-6: n = Vector((0, -1, 0))
         best = max(order, key=lambda v: n.dot(VIEWS[v]["normal"]))
-        idx_attr.data[poly.index].value = order.index(best)
+        face_view.append(order.index(best))
     # bake target UV
     bake_uv = me.uv_layers.new(name="UVMap_bake"); me.uv_layers.active = bake_uv
     bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT")
@@ -123,7 +123,7 @@ def main():
         bake_node = nt.nodes.new("ShaderNodeTexImage"); bake_node.image = target; nt.nodes.active = bake_node
         me.materials.append(mat)
     for poly in me.polygons:
-        poly.material_index = idx_attr.data[poly.index].value
+        poly.material_index = face_view[poly.index]
     scene = bpy.context.scene; scene.render.engine = "CYCLES"; scene.cycles.samples = a.samples; scene.cycles.device = a.device
     scene.render.bake.use_selected_to_active = False; scene.render.bake.margin = 8
     bpy.ops.object.bake(type="EMIT", use_clear=True)
@@ -139,7 +139,6 @@ def main():
     bsdf = mat.node_tree.nodes["Principled BSDF"]; mat.node_tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"]); bsdf.inputs["Roughness"].default_value = 0.85
     me.materials.append(mat)
     for poly in me.polygons: poly.material_index = 0
-    me.attributes.remove(me.attributes["proj_view"])
     bpy.ops.wm.save_as_mainfile(filepath=stem + ".blend")
     print("##JSON##" + str({"blend": stem + ".blend", "basecolor": stem + "_BaseColor.png", "views": order, "size": a.size}).replace("'", '"'))
 
