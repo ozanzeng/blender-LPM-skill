@@ -162,6 +162,28 @@ Consequences for the procedure:
 - Report both numbers: the four training views (how faithful the texture is) and the held-out view (whether the
   object is actually right).
 
+
+## How many reference angles do you actually need?
+
+Measured on the lion altar (held-out 3/4 concept, hull carved from N calibrated silhouettes, our own texture, no
+generator in the geometry):
+
+| reference views | held-out IoU | the lion's head |
+| ---: | ---: | --- |
+| 4 (front/back/left/right) | 0.868 | mush — the muzzle and mane are simply not in four silhouettes |
+| 8 (every 45°) | 0.879 | recognisable |
+| 16 (every 22.5°) | 0.881 | **clean faceted lion, delivery quality** |
+
+So: **four views are enough for boxy props and for the texture, and not enough for a figure.** If you want the
+whole asset built in Blender with no 3D generator anywhere, supply 8–16 angles of the concept (the same way the
+4-view sheet was made) and `render_n_views.py` / `hull_n_views.py` will carve it. With only four, either accept a
+generator for the figure's geometry or model the figure by hand.
+
+Symmetry: model one half and mirror it (`hull_prep.py --mirror` bisects at x=0 and applies a Mirror modifier).
+Unioning a shape with its mirror instead inflates it — that was an early mistake here.
+The reference look is **flat shading with large facets**: `--planar2 8 --flat` after the collapse pass gives it;
+smooth shading on a hull is what made the first attempt look like a blob.
+
 ## PBR = definitions only
 
 Every colour is a palette cell with `(name, baseColor hex, metallic, roughness[, emission])`. `export_unity()`

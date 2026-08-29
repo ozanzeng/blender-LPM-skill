@@ -16,6 +16,9 @@ def parse():
     p.add_argument("--budget", type=int, default=8000); p.add_argument("--smooth", type=int, default=0)
     p.add_argument("--planar", type=float, default=4.0); p.add_argument("--name", default="SM_Hull")
     p.add_argument("--weld", type=float, default=0.0015)
+    p.add_argument("--flat", action="store_true", help="flat shading (the reference low-poly look)")
+    p.add_argument("--mirror", action="store_true", help="keep the +X half and mirror it: exact symmetry, half the artifacts")
+    p.add_argument("--planar2", type=float, default=0.0, help="second planar pass after collapse, for big flat facets")
     return p.parse_args(argv)
 
 
@@ -43,6 +46,15 @@ def main():
     if a.weld:
         bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT")
         bpy.ops.mesh.remove_doubles(threshold=a.weld); bpy.ops.object.mode_set(mode="OBJECT")
+    if a.mirror:
+        import bmesh
+        bm = bmesh.new(); bm.from_mesh(ob.data)
+        bmesh.ops.bisect_plane(bm, geom=list(bm.verts) + list(bm.edges) + list(bm.faces),
+                               plane_co=(0, 0, 0), plane_no=(1, 0, 0), clear_inner=True)
+        bm.to_mesh(ob.data); bm.free()
+        m = ob.modifiers.new("Mirror", "MIRROR"); m.use_axis[0] = True; m.use_clip = True; m.merge_threshold = 0.002
+        bpy.ops.object.modifier_apply(modifier="Mirror")
+        print("after mirror", tris(ob))
     if a.smooth:
         m = ob.modifiers.new("Smooth", "SMOOTH"); m.iterations = a.smooth; m.factor = 0.5
         bpy.ops.object.modifier_apply(modifier="Smooth")
@@ -53,8 +65,13 @@ def main():
     if a.budget and tris(ob) > a.budget:
         d = ob.modifiers.new("Collapse", "DECIMATE"); d.decimate_type = "COLLAPSE"; d.ratio = a.budget / tris(ob); d.use_collapse_triangulate = True
         bpy.ops.object.modifier_apply(modifier="Collapse")
-    bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT"); bpy.ops.mesh.normals_make_consistent(inside=False); bpy.ops.object.mode_set(mode="OBJECT")
-    for p in ob.data.polygons: p.use_smooth = True
+    if a.planar2:
+        d = ob.modifiers.new("Planar2", "DECIMATE"); d.decimate_type = "DISSOLVE"; d.angle_limit = math.radians(a.planar2)
+        bpy.ops.object.modifier_apply(modifier="Planar2")
+        print("after planar2", tris(ob))
+    bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT"); bpy.ops.mesh.normals_make_consistent(inside=False)
+    bpy.ops.mesh.quads_convert_to_tris(quad_method="BEAUTY"); bpy.ops.object.mode_set(mode="OBJECT")
+    for p in ob.data.polygons: p.use_smooth = not a.flat
     out = os.path.abspath(a.out); os.makedirs(os.path.dirname(out), exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=out)
     print("##JSON##" + str({"blend": out, "tris": tris(ob), "dims": [round(c, 3) for c in ob.dimensions]}).replace("'", '"'))
